@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Nhúng 4 Ảnh Trực Tiếp Vào giaManPhotos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-6">
+    <div class="bg-slate-800 border border-pink-500/40 rounded-2xl p-8 max-w-lg w-full shadow-2xl space-y-5">
+        <h1 class="text-xl font-bold text-pink-400 text-center">✨ Nhúng 4 Ảnh Vào File Gốc (Giữ Nguyên 100%) ✨</h1>
+        
+        <div>
+            <label class="block text-sm font-semibold mb-1 text-pink-200">1. Chọn file <code>gia-man-da-sua.html</code> (hoặc <code>gia man.html</code>):</label>
+            <input type="file" id="htmlFile" accept=".html,.htm" class="w-full text-sm bg-slate-700 rounded-lg p-2">
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold mb-1 text-pink-200">2. Chọn 4 ảnh của bạn (giữ Ctrl chọn cả 4 ảnh):</label>
+            <input type="file" id="imgFiles" accept="image/*" multiple class="w-full text-sm bg-slate-700 rounded-lg p-2">
+        </div>
+
+        <button onclick="embedPhotos()" class="w-full py-3 rounded-xl bg-pink-600 hover:bg-pink-500 font-bold text-white transition">
+            🚀 Thay Ảnh & Tải File Hoàn Chỉnh
+        </button>
+        <p id="msg" class="text-center text-sm text-emerald-400"></p>
+    </div>
+
+    <script>
+        const toBase64 = file => new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = rej;
+            r.readAsDataURL(file);
+        });
+
+        async function embedPhotos() {
+            const htmlFile = document.getElementById('htmlFile').files[0];
+            const imgFiles = Array.from(document.getElementById('imgFiles').files);
+            if (!htmlFile || !imgFiles.length) return alert('Vui lòng chọn file HTML và 4 bức ảnh!');
+
+            document.getElementById('msg').textContent = '⏳ Đang nhúng ảnh vào giaManPhotos...';
+            let raw = await htmlFile.text();
+            const imgs = await Promise.all(imgFiles.map(toBase64));
+
+            // 1. Đổi đúng dòng chữ ghép ở word-line-3 thành IEM MEO IU
+            raw = raw.replace(/(id:\s*['"]word-line-3['"],\s*text:\s*['"])([^'"]+)(['"])/g, '$1IEM MEO IU 💖$3');
+
+            // 2. Đổi toàn bộ tên Gia Mẫn / Mẫn còn lại thành Bảo Uyên
+            raw = raw.replace(/NỮ THẦN IEM MEO IU/g, 'NỮ THẦN BẢO UYÊN');
+            raw = raw.replace(/GIA\s+MẪN/g, 'BẢO UYÊN');
+            raw = raw.replace(/Gia\s+Mẫn/g, 'Bảo Uyên');
+            raw = raw.replace(/gia\s+mẫn/gi, 'Bảo Uyên');
+            raw = raw.replace(/Tim tặng Mẫn:/g, 'Tim tặng Bảo Uyên:');
+            raw = raw.replace(/của Mẫn\./g, 'của Bảo Uyên.');
+
+            // 3. Thay chính xác 4 thuộc tính src: "..." bên trong mảng giaManPhotos
+            let idx = 0;
+            raw = raw.replace(/const\s+giaManPhotos\s*=\s*\[([\s\S]*?)\];/, (match) => {
+                return match.replace(/src:\s*["'][^"']+["']/g, () => {
+                    const b64 = imgs[idx % imgs.length];
+                    idx++;
+                    return `src: "${b64}"`;
+                });
+            });
+
+            const blob = new Blob([raw], { type: 'text/html;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'bao-uyen-hoan-chinh.html';
+            a.click();
+            document.getElementById('msg').textContent = `✅ Đã thay thành công ${idx} bức ảnh vào file!`;
+        }
+    </script>
+</body>
+</html>
